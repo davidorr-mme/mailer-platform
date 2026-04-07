@@ -1,0 +1,28 @@
+# ============================================================
+# Replace YOUR_RAILWAY_URL below with your actual Railway URL
+# Example: https://mailer-platform-backend-production.up.railway.app
+# ============================================================
+
+[[redirects]]
+  from = "/api/*"
+  to = "YOUR_RAILWAY_URL/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/track/*"
+  to = "YOUR_RAILWAY_URL/track/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/unsubscribe/*"
+  to = "YOUR_RAILWAY_URL/unsubscribe/:splat"
+  status = 200
+  force = true
+
+# This must be last — makes React routing work
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
