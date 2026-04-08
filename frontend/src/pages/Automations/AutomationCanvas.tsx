@@ -276,21 +276,21 @@ function CanvasInner() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [automation, setAutomation] = useState<Automation | null>(null);
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [saving, setSaving] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
-  const rfInstanceRef = useRef<ReactFlowInstance | null>(null);
+  const rfInstanceRef = useRef<ReactFlowInstance<Node, Edge> | null>(null);
 
   useEffect(() => {
     if (!id) return;
     automationsApi.getAutomation(id).then((a) => {
       setAutomation(a);
       setNameValue(a.name);
-      if (a.workflowJson?.nodes) setNodes(a.workflowJson.nodes);
-      if (a.workflowJson?.edges) setEdges(a.workflowJson.edges);
+      if (a.workflowJson?.nodes) setNodes(a.workflowJson.nodes as Node[]);
+      if (a.workflowJson?.edges) setEdges(a.workflowJson.edges as Edge[]);
     }).catch(() => toast.error('Failed to load automation'));
   }, [id]);
 
