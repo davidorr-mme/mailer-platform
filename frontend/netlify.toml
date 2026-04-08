@@ -5,19 +5,19 @@
 
 [[redirects]]
   from = "/api/*"
-  to = "mailer-platform-production.up.railway.app/api/:splat"
+  to = "https://mailer-platform-production.up.railway.app/api/:splat"
   status = 200
   force = true
 
 [[redirects]]
   from = "/track/*"
-  to = "mailer-platform-production.up.railway.app/track/:splat"
+  to = "https://mailer-platform-production.up.railway.app/track/:splat"
   status = 200
   force = true
 
 [[redirects]]
   from = "/unsubscribe/*"
-  to = "mailer-platform-production.up.railway.app/unsubscribe/:splat"
+  to = "https://mailer-platform-production.up.railway.app/unsubscribe/:splat"
   status = 200
   force = true
 
