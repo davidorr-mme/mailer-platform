@@ -6,7 +6,7 @@ import { sendCampaignEmail } from '../services/email';
 import { evaluateSegment } from '../services/segmentEvaluator';
 
 export const campaignSendQueue = new Queue('campaign-send', {
-  connection: redisClient,
+  connection: getBullMQConnection(),
 });
 
 export function startCampaignSendWorker() {
@@ -105,7 +105,7 @@ export function startCampaignSendWorker() {
       console.log(`Campaign ${campaignId} send complete`);
     },
     {
-      connection: redisClient,
+      connection: getBullMQConnection(),
     }
   );
 
