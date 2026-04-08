@@ -1,6 +1,6 @@
 import { Queue, Worker } from 'bullmq';
 import { v4 as uuidv4 } from 'uuid';
-import redisClient from '../config/redis';
+import { getBullMQConnection } from '../config/redis';
 import db from '../config/db';
 import { sendCampaignEmail } from '../services/email';
 
@@ -42,7 +42,7 @@ interface WorkflowJson {
 }
 
 export const automationQueue = new Queue('automation-processor', {
-  connection: redisClient,
+  connection: getBullMQConnection(),
 });
 
 function getDelayMs(duration: number, unit: string): number {
@@ -166,7 +166,7 @@ export function startAutomationWorker() {
       }
     },
     {
-      connection: redisClient,
+      connection: getBullMQConnection(),
     }
   );
 
