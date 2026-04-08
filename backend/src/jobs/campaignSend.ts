@@ -1,6 +1,6 @@
 import { Queue, Worker } from 'bullmq';
 import { v4 as uuidv4 } from 'uuid';
-import redisClient from '../config/redis';
+import { getBullMQConnection } from '../config/redis';
 import db from '../config/db';
 import { sendCampaignEmail } from '../services/email';
 import { evaluateSegment } from '../services/segmentEvaluator';
