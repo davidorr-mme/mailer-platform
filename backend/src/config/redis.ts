@@ -18,3 +18,13 @@ redisClient.connect().catch((err) => {
 });
 
 export default redisClient;
+
+export function getBullMQConnection() {
+  const url = new URL(env.REDIS_URL);
+  return {
+    host: url.hostname,
+    port: parseInt(url.port) || 6379,
+    password: url.password ? decodeURIComponent(url.password) : undefined,
+    tls: url.protocol === 'rediss:' ? {} : undefined,
+  };
+}
