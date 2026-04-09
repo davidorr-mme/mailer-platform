@@ -308,25 +308,25 @@ export default function DataImport() {
                 />
               </div>
 
-              <div className="mt-4 flex gap-4">
-                <a
-                  href="/api/imports/sample/contacts"
+                            <div className="mt-4 flex gap-4">
+                <button
+                  onClick={() => importsApi.downloadTemplate('contacts').catch(() => toast.error('Download failed'))}
                   className="text-sm text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
                   Download contacts template
-                </a>
-                <a
-                  href="/api/imports/sample/events"
+                </button>
+                <button
+                  onClick={() => importsApi.downloadTemplate('events').catch(() => toast.error('Download failed'))}
                   className="text-sm text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
                   Download events template
-                </a>
+                </button>
               </div>
 
               <div className="flex justify-end mt-6">
