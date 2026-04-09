@@ -15,7 +15,7 @@ export const dashboardApi = {
     return res.data.data;
   },
   getPerformanceChart: async (days: number): Promise<PerformanceDataPoint[]> => {
-    const res = await client.get('/dashboard/performance', { params: { days } });
+    const res = await client.get('/dashboard/performance-chart', { params: { days } });
     return res.data.data;
   },
 };
