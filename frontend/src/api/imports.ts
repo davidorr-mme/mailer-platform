@@ -20,8 +20,17 @@ export const importsApi = {
     const res = await client.get('/imports/history', { params: { page, pageSize } });
     return res.data.data;
   },
-  downloadErrors: async (id: string): Promise<any> => {
+   downloadErrors: async (id: string): Promise<any> => {
     const res = await client.get(`/imports/${id}/errors`);
     return res.data.data;
+  },
+  downloadTemplate: async (type: 'contacts' | 'events'): Promise<void> => {
+    const res = await client.get(`/imports/sample/${type}`, { responseType: 'blob' });
+    const url = URL.createObjectURL(new Blob([res.data]));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${type}-template.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
   },
 };
