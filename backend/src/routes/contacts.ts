@@ -38,7 +38,7 @@ router.get('/search', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const contact = await db('contacts').where({ email: String(email) }).first();
+    const contact = await db('contacts').whereILike('email', `%${String(email)}%`).first();
     if (!contact) {
       res.status(404).json({ success: false, error: 'Contact not found' });
       return;
