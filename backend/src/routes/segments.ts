@@ -182,22 +182,28 @@ router.get('/:id/export', async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    const [attrDefs, contacts, events] = await Promise.all([
-      db('attribute_definitions').orderBy('name', 'asc'),
-      db('contacts').whereIn('id', contactIds).select('id', 'email', 'global_unsubscribe', 'created_at', 'custom_attributes'),
-      db('custom_events').whereIn('contact_id', contactIds).select('contact_id', 'event_name', 'occurred_at').orderBy('occurred_at', 'desc'),
-    ]);
+    const attrDefs = await db('attribute_definitions').orderBy('name', 'asc');
+    const contacts = await db('contacts')
+      .whereIn('id', contactIds)
+      .select('id', 'email', 'global_unsubscribe', 'created_at', 'custom_attributes');
+    const events = await db('custom_events')
+      .whereIn('contact_id', contactIds)
+      .select('contact_id', 'event_name', 'occurred_at')
+      .orderBy('occurred_at', 'desc');
 
     // Distinct event names across this segment's contacts
-    const eventNames: string[] = [...new Set(events.map((e: any) => e.event_name as string))].sort();
+    const eventNames: string[] = [...new Set(events.map((e: any) => (e.event_name ?? e.eventName) as string))].filter(Boolean).sort();
 
     // contact_id -> event_name -> most recent occurred_at
+    const norm = (s: string) => s.toLowerCase().replace(/_/g, '');
     const eventMap: Record<string, Record<string, string>> = {};
     for (const ev of events) {
-      if (!eventMap[ev.contact_id]) eventMap[ev.contact_id] = {};
-      if (!eventMap[ev.contact_id][ev.event_name]) {
-        eventMap[ev.contact_id][ev.event_name] = ev.occurred_at;
-      }
+      const cid = ev.contact_id ?? ev.contactId;
+      const ename = ev.event_name ?? ev.eventName;
+      const oat = ev.occurred_at ?? ev.occurredAt;
+      if (!cid || !ename) continue;
+      if (!eventMap[cid]) eventMap[cid] = {};
+      if (!eventMap[cid][ename]) eventMap[cid][ename] = oat;
     }
 
     // CSV escape: wrap in quotes if value contains comma, quote, or newline
@@ -211,10 +217,13 @@ router.get('/:id/export', async (req: Request, res: Response): Promise<void> => 
     const headerRow = ['id', 'email', 'global_unsubscribe', 'created_at', ...attrHeaders, ...eventHeaders].join(',');
 
     const rows = contacts.map((c: any) => {
-      const attrs = c.custom_attributes ?? {};
-      const attrValues = attrDefs.map((a: any) => esc(attrs[a.name] ?? ''));
+      const attrs = c.custom_attributes ?? c.customAttributes ?? {};
+      const attrValues = attrDefs.map((a: any) => {
+        const match = Object.entries(attrs).find(([k]) => norm(k) === norm(a.name));
+        return esc(match ? match[1] : '');
+      });
       const evValues = eventNames.map((n) => esc(eventMap[c.id]?.[n] ?? ''));
-      return [c.id, esc(c.email), c.global_unsubscribe, c.created_at, ...attrValues, ...evValues].join(',');
+      return `${c.id},${esc(c.email)},${c.global_unsubscribe},${c.created_at},${attrValues.join(',')},${evValues.join(',')}`;
     });
 
     res.setHeader('Content-Type', 'text/csv');
