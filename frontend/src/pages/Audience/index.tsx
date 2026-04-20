@@ -57,6 +57,15 @@ function SegmentList() {
     }
   };
 
+  const handleExport = async (id: string, name: string) => {
+    try {
+      await segmentsApi.exportSegment(id, name);
+      toast.success('Export downloaded');
+    } catch {
+      toast.error('Failed to export segment');
+    }
+  };
+
   return (
     <div>
       <div className="flex justify-end mb-4">
@@ -123,6 +132,12 @@ function SegmentList() {
                         className="text-sm text-gray-500 hover:text-gray-700"
                       >
                         Duplicate
+                      </button>
+                      <button
+                        onClick={() => handleExport(seg.id, seg.name)}
+                        className="text-sm text-green-600 hover:text-green-700"
+                      >
+                        Export
                       </button>
                       <button
                         onClick={() => setDeleteId(seg.id)}
@@ -219,6 +234,10 @@ function UserLookup() {
   const [eventsPage, setEventsPage] = useState(1);
   const [campaignHistory, setCampaignHistory] = useState<any[]>([]);
   const [attributes, setAttributes] = useState<AttributeDefinition[]>([]);
+  const [editing, setEditing] = useState(false);
+  const [editEmail, setEditEmail] = useState('');
+  const [editUnsubscribe, setEditUnsubscribe] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const handleSearch = async () => {
     if (!email.trim()) return;
@@ -242,6 +261,31 @@ function UserLookup() {
       toast.error('Search failed');
     } finally {
       setSearching(false);
+    }
+  };
+
+  const handleStartEdit = () => {
+    if (!contact) return;
+    setEditEmail(contact.email);
+    setEditUnsubscribe(contact.globalUnsubscribe);
+    setEditing(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!contact) return;
+    setSaving(true);
+    try {
+      const updated = await contactsApi.updateContact(contact.id, {
+        email: editEmail,
+        globalUnsubscribe: editUnsubscribe,
+      });
+      setContact({ ...contact, ...updated, email: updated.email ?? editEmail, globalUnsubscribe: updated.global_unsubscribe ?? editUnsubscribe });
+      setEditing(false);
+      toast.success('Contact updated');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || 'Failed to update contact');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -288,25 +332,81 @@ function UserLookup() {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
             <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-800">Identity</h3>
-              {contact.globalUnsubscribe && (
-                <span className="px-2.5 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-full">
-                  Globally Unsubscribed
-                </span>
-              )}
+              <div className="flex items-center gap-3">
+                {contact.globalUnsubscribe && !editing && (
+                  <span className="px-2.5 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-full">
+                    Globally Unsubscribed
+                  </span>
+                )}
+                {!editing ? (
+                  <button
+                    onClick={handleStartEdit}
+                    className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                  >
+                    Edit
+                  </button>
+                ) : (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setEditing(false)}
+                      className="text-sm text-gray-500 hover:text-gray-700"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSaveEdit}
+                      disabled={saving}
+                      className="text-sm text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1 rounded-md disabled:opacity-60"
+                    >
+                      {saving ? 'Saving...' : 'Save'}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="p-5 grid grid-cols-2 gap-4">
-              {[
-                { label: 'Email', value: contact.email },
-                { label: 'Contact ID', value: contact.id },
-                { label: 'Created', value: format(new Date(contact.createdAt), 'MMM d, yyyy HH:mm') },
-                { label: 'Updated', value: format(new Date(contact.updatedAt), 'MMM d, yyyy HH:mm') },
-              ].map(({ label, value }) => (
-                <div key={label}>
-                  <p className="text-xs text-gray-500 font-medium">{label}</p>
-                  <p className="text-sm text-gray-900 mt-0.5">{value}</p>
+            {editing ? (
+              <div className="p-5 space-y-4">
+                <div>
+                  <label className="text-xs text-gray-500 font-medium block mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
                 </div>
-              ))}
-            </div>
+                <div>
+                  <label className="text-xs text-gray-500 font-medium block mb-1">Contact ID</label>
+                  <p className="text-sm text-gray-400">{contact.id}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="editUnsubscribe"
+                    checked={editUnsubscribe}
+                    onChange={(e) => setEditUnsubscribe(e.target.checked)}
+                    className="rounded border-gray-300 text-indigo-600"
+                  />
+                  <label htmlFor="editUnsubscribe" className="text-sm text-gray-700">
+                    Globally Unsubscribed
+                  </label>
+                </div>
+              </div>
+            ) : (
+              <div className="p-5 grid grid-cols-2 gap-4">
+                {[
+                  { label: 'Email', value: contact.email },
+                  { label: 'Contact ID', value: contact.id },
+                  { label: 'Created', value: format(new Date(contact.createdAt), 'MMM d, yyyy HH:mm') },
+                  { label: 'Updated', value: format(new Date(contact.updatedAt), 'MMM d, yyyy HH:mm') },
+                ].map(({ label, value }) => (
+                  <div key={label}>
+                    <p className="text-xs text-gray-500 font-medium">{label}</p>
+                    <p className="text-sm text-gray-900 mt-0.5">{value}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Custom Attributes */}
