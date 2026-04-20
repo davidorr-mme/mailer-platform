@@ -279,7 +279,7 @@ function UserLookup() {
         email: editEmail,
         globalUnsubscribe: editUnsubscribe,
       });
-      setContact({ ...contact, ...updated, email: updated.email ?? editEmail, globalUnsubscribe: updated.global_unsubscribe ?? editUnsubscribe });
+      setContact({ ...contact, ...updated, email: updated.email ?? editEmail, globalUnsubscribe: updated.globalUnsubscribe ?? editUnsubscribe });
       setEditing(false);
       toast.success('Contact updated');
     } catch (err: any) {
