@@ -239,11 +239,17 @@ function UserLookup() {
   const [editUnsubscribe, setEditUnsubscribe] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  const normalizeAttrs = (obj: Record<string, any>): Record<string, any> =>
+    Object.fromEntries(
+      Object.entries(obj).map(([k, v]) => [k.replace(/([A-Z])/g, '_$1').toLowerCase(), v])
+    );
+
   const handleSearch = async () => {
     if (!email.trim()) return;
     setSearching(true);
     try {
       const result = await contactsApi.searchContact(email.trim());
+      if (result?.customAttributes) result.customAttributes = normalizeAttrs(result.customAttributes);
       setContact(result);
       if (result) {
         const [evData, campData, attrData] = await Promise.all([
@@ -432,7 +438,7 @@ function UserLookup() {
                       <td className="px-4 py-3">
                         <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">{attr.dataType}</span>
                       </td>
-                                            <td className="px-4 py-3 text-sm text-gray-700">
+                      <td className="px-4 py-3 text-sm text-gray-700">
                         {(() => {
                           const attrs = contact.customAttributes ?? (contact as any).custom_attributes ?? {};
                           const camelKey = attr.name.replace(/_([a-z])/g, (_: string, c: string) => c.toUpperCase());
