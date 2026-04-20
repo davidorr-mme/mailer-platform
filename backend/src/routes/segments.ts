@@ -171,18 +171,55 @@ router.get('/:id/export', async (req: Request, res: Response): Promise<void> => 
       res.status(404).json({ success: false, error: 'Segment not found' });
       return;
     }
+
     const contactIds = await evaluateSegment(segment.logic, db);
-    const contacts = contactIds.length > 0
-      ? await db('contacts').whereIn('id', contactIds).select('id', 'email', 'global_unsubscribe', 'created_at')
-      : [];
-    const header = 'id,email,global_unsubscribe,created_at\n';
-    const rows = contacts.map((c: any) =>
-      `${c.id},"${c.email}",${c.global_unsubscribe},${c.created_at}`
-    ).join('\n');
     const filename = segment.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+
+    if (contactIds.length === 0) {
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}-export.csv"`);
+      res.send('id,email,global_unsubscribe,created_at\n');
+      return;
+    }
+
+    const [attrDefs, contacts, events] = await Promise.all([
+      db('attribute_definitions').orderBy('name', 'asc'),
+      db('contacts').whereIn('id', contactIds).select('id', 'email', 'global_unsubscribe', 'created_at', 'custom_attributes'),
+      db('custom_events').whereIn('contact_id', contactIds).select('contact_id', 'event_name', 'occurred_at').orderBy('occurred_at', 'desc'),
+    ]);
+
+    // Distinct event names across this segment's contacts
+    const eventNames: string[] = [...new Set(events.map((e: any) => e.event_name as string))].sort();
+
+    // contact_id -> event_name -> most recent occurred_at
+    const eventMap: Record<string, Record<string, string>> = {};
+    for (const ev of events) {
+      if (!eventMap[ev.contact_id]) eventMap[ev.contact_id] = {};
+      if (!eventMap[ev.contact_id][ev.event_name]) {
+        eventMap[ev.contact_id][ev.event_name] = ev.occurred_at;
+      }
+    }
+
+    // CSV escape: wrap in quotes if value contains comma, quote, or newline
+    const esc = (v: any): string => {
+      const s = v === null || v === undefined ? '' : String(v);
+      return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+
+    const attrHeaders = attrDefs.map((a: any) => `attr_${a.name}`);
+    const eventHeaders = eventNames.map((n) => `event_${n}_last_at`);
+    const headerRow = ['id', 'email', 'global_unsubscribe', 'created_at', ...attrHeaders, ...eventHeaders].join(',');
+
+    const rows = contacts.map((c: any) => {
+      const attrs = c.custom_attributes ?? {};
+      const attrValues = attrDefs.map((a: any) => esc(attrs[a.name] ?? ''));
+      const evValues = eventNames.map((n) => esc(eventMap[c.id]?.[n] ?? ''));
+      return [c.id, esc(c.email), c.global_unsubscribe, c.created_at, ...attrValues, ...evValues].join(',');
+    });
+
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}-export.csv"`);
-    res.send(header + rows);
+    res.send([headerRow, ...rows].join('\n'));
   } catch (err) {
     const error = err as Error;
     res.status(500).json({ success: false, error: error.message });
