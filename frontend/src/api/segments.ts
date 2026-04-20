@@ -33,4 +33,13 @@ export const segmentsApi = {
     const res = await client.post(`/segments/${id}/duplicate`);
     return res.data.data;
   },
+    exportSegment: async (id: string, name: string): Promise<void> => {
+    const res = await client.get(`/segments/${id}/export`, { responseType: 'blob' });
+    const url = URL.createObjectURL(new Blob([res.data], { type: 'text/csv' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}-export.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
 };
