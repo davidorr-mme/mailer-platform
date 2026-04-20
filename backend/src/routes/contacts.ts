@@ -168,6 +168,36 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
+router.put('/:id', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { email, globalUnsubscribe } = req.body;
+
+    const contact = await db('contacts').where({ id }).first();
+    if (!contact) {
+      res.status(404).json({ success: false, error: 'Contact not found' });
+      return;
+    }
+
+    const updateData: Record<string, unknown> = { updated_at: db.fn.now() };
+    if (email !== undefined) {
+      const existing = await db('contacts').where({ email }).whereNot({ id }).first();
+      if (existing) {
+        res.status(409).json({ success: false, error: 'Email already in use by another contact' });
+        return;
+      }
+      updateData.email = email;
+    }
+    if (globalUnsubscribe !== undefined) updateData.global_unsubscribe = globalUnsubscribe;
+
+    const [updated] = await db('contacts').where({ id }).update(updateData).returning('*');
+    res.json({ success: true, data: updated });
+  } catch (err) {
+    const error = err as Error;
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 router.put('/:id/attributes', async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
