@@ -163,6 +163,32 @@ router.post('/estimate', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
+router.get('/:id/export', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const segment = await db('segments').where({ id }).first();
+    if (!segment) {
+      res.status(404).json({ success: false, error: 'Segment not found' });
+      return;
+    }
+    const contactIds = await evaluateSegment(segment.logic, db);
+    const contacts = contactIds.length > 0
+      ? await db('contacts').whereIn('id', contactIds).select('id', 'email', 'global_unsubscribe', 'created_at')
+      : [];
+    const header = 'id,email,global_unsubscribe,created_at\n';
+    const rows = contacts.map((c: any) =>
+      `${c.id},"${c.email}",${c.global_unsubscribe},${c.created_at}`
+    ).join('\n');
+    const filename = segment.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}-export.csv"`);
+    res.send(header + rows);
+  } catch (err) {
+    const error = err as Error;
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 router.post('/:id/duplicate', async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
