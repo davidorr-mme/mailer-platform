@@ -433,9 +433,10 @@ function UserLookup() {
                         <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">{attr.dataType}</span>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-700">
-                        {contact.customAttributes[attr.name] !== undefined
-                          ? String(contact.customAttributes[attr.name])
-                          : '—'}
+                        {(() => {
+                          const attrs = contact.customAttributes ?? (contact as any).custom_attributes ?? {};
+                          return attrs[attr.name] !== undefined ? String(attrs[attr.name]) : '—';
+                        })()}
                       </td>
                     </tr>
                   ))}
