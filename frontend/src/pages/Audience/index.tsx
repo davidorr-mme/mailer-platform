@@ -432,10 +432,12 @@ function UserLookup() {
                       <td className="px-4 py-3">
                         <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">{attr.dataType}</span>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-700">
+                                            <td className="px-4 py-3 text-sm text-gray-700">
                         {(() => {
                           const attrs = contact.customAttributes ?? (contact as any).custom_attributes ?? {};
-                          return attrs[attr.name] !== undefined ? String(attrs[attr.name]) : '—';
+                          const camelKey = attr.name.replace(/_([a-z])/g, (_: string, c: string) => c.toUpperCase());
+                          const value = attrs[camelKey] !== undefined ? attrs[camelKey] : attrs[attr.name];
+                          return value !== undefined ? String(value) : '—';
                         })()}
                       </td>
                     </tr>
