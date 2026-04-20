@@ -420,37 +420,67 @@ function UserLookup() {
             <div className="px-5 py-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-800">Custom Attributes</h3>
             </div>
-            {attributes.length === 0 ? (
-              <p className="p-5 text-sm text-gray-400">No custom attributes defined</p>
-            ) : (
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gray-50">
-                    <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Attribute</th>
-                    <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Type</th>
-                    <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Value</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {attributes.map((attr) => (
-                    <tr key={attr.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">{attr.name}</td>
-                      <td className="px-4 py-3">
-                        <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">{attr.dataType}</span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-700">
-                        {(() => {
-                          const attrs = contact.customAttributes ?? (contact as any).custom_attributes ?? {};
-                          const camelKey = attr.name.replace(/_([a-z])/g, (_: string, c: string) => c.toUpperCase());
-                          const value = attrs[camelKey] !== undefined ? attrs[camelKey] : attrs[attr.name];
-                          return value !== undefined ? String(value) : '—';
-                        })()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+            {(() => {
+              const rawAttrs: Record<string, any> = (contact as any).customAttributes ?? (contact as any).custom_attributes ?? {};
+              const entries = Object.entries(rawAttrs);
+              // Normalize: lowercase and strip underscores for fuzzy key matching
+              const norm = (s: string) => s.toLowerCase().replace(/_/g, '');
+              const attrMap: Record<string, any> = {};
+              for (const [k, v] of entries) { attrMap[norm(k)] = v; }
+
+              if (attributes.length > 0) {
+                return (
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Attribute</th>
+                        <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Type</th>
+                        <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Value</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {attributes.map((attr) => {
+                        const value = attrMap[norm(attr.name)];
+                        return (
+                          <tr key={attr.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 text-sm font-medium text-gray-900">{attr.name}</td>
+                            <td className="px-4 py-3">
+                              <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">
+                                {(attr as any).dataType ?? (attr as any).data_type ?? ''}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-700">
+                              {value !== undefined ? String(value) : '—'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                );
+              }
+              if (entries.length > 0) {
+                return (
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Attribute</th>
+                        <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">Value</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {entries.map(([key, val]) => (
+                        <tr key={key} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 text-sm font-medium text-gray-900">{key}</td>
+                          <td className="px-4 py-3 text-sm text-gray-700">{String(val)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                );
+              }
+              return <p className="p-5 text-sm text-gray-400">No custom attributes</p>;
+            })()}
           </div>
 
           {/* Custom Events */}
